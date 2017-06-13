@@ -356,7 +356,13 @@ struct BulkCommand
 #ifndef PC_SIDE
 
 #ifdef DEBUG
+#ifdef __PSP2__
+// use psp2shell to print with "kDebugPrintf"
+int kDebugPrintf(int num0, int num1, const char *fmt, ...);
+#define DEBUG_PRINTF(...) kDebugPrintf(0, 0, ## __VA_ARGS__)
+#else
 #define DEBUG_PRINTF(fmt, ...) Kprintf("%s: " fmt, MODULE_NAME, ## __VA_ARGS__)
+#endif
 #else
 #define DEBUG_PRINTF(fmt, ...)
 #endif

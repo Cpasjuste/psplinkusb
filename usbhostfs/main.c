@@ -10,6 +10,9 @@
  * $HeadURL: svn://svn.ps2dev.org/psp/trunk/psplinkusb/usbhostfs/main.c $
  * $Id: main.c 2189 2007-02-24 12:16:44Z tyranid $
  */
+#ifdef __PSP2__
+#include "psp2.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspkdebug.h>
@@ -19,12 +22,17 @@
 #include <string.h>
 #include <pspusb.h>
 #include <pspusbbus.h>
+#endif
 #include "usbhostfs.h"
 #include "usbasync.h"
 
+#ifdef __PSP2__
+int psplinkSetK1(int k1) { return 0; };
+#else
 int psplinkSetK1(int k1);
 
 PSP_MODULE_INFO(MODULE_NAME, PSP_MODULE_KERNEL, 1, 1);
+#endif
 
 /* Main USB event flags */
 enum UsbEvents
@@ -33,6 +41,9 @@ enum UsbEvents
 	USB_EVENT_DETACH = 2,
 	USB_EVENT_ASYNC  = 4,
 	USB_EVENT_CONNECT = 8,
+#ifdef __PSP2__
+    USB_EVENT_QUIT = 16,
+#endif
 	USB_EVENT_ALL = 0xFFFFFFFF
 };
 
@@ -72,8 +83,12 @@ struct DeviceDescriptor devdesc_hi =
 	.bcdUSB = 0x200, 
 	.bDeviceClass = 0, 
 	.bDeviceSubClass = 0, 
-	.bDeviceProtocol = 0, 
-	.bMaxPacketSize = 64, 
+	.bDeviceProtocol = 0,
+#ifdef __PSP2__
+    .bMaxPacketSize0 = 64,
+#else
+	.bMaxPacketSize = 64,
+#endif
 	.idVendor = 0, 
 	.idProduct = 0, 
 	.bcdDevice = 0x100, 
@@ -147,8 +162,12 @@ struct DeviceDescriptor devdesc_full =
 	.bcdUSB = 0x200, 
 	.bDeviceClass = 0, 
 	.bDeviceSubClass = 0, 
-	.bDeviceProtocol = 0, 
-	.bMaxPacketSize = 64, 
+	.bDeviceProtocol = 0,
+#ifdef __PSP2__
+    .bMaxPacketSize0 = 64,
+#else
+	.bMaxPacketSize = 64,
+#endif
 	.idVendor = 0, 
 	.idProduct = 0, 
 	.bcdDevice = 0x100, 
@@ -222,10 +241,18 @@ unsigned char strp[] =
 
 /* Endpoint blocks */
 struct UsbEndpoint endp[4] = {
+#ifdef __PSP2__
+    /* 0x80 = in, 0x00 = out */
+    {0x00, 0, 0, 0},
+    {0x80, 1, 0, 0},
+    {0x00, 2, 0, 0},
+    {0x00, 3, 0, 0},
+#else
 	{ 0, 0, 0 },
 	{ 1, 0, 0 },
 	{ 2, 0, 0 },
 	{ 3, 0, 0 },
+#endif
 };
 
 /* Intefaces */
@@ -1005,6 +1032,9 @@ int usb_thread(SceSize size, void *argp)
 	while(1)
 	{
 		ret = sceKernelWaitEventFlag(g_mainevent, USB_EVENT_ATTACH | USB_EVENT_DETACH | USB_EVENT_ASYNC
+#ifdef __PSP2__
+                                     | USB_EVENT_QUIT
+#endif
 				, PSP_EVENT_WAITOR | PSP_EVENT_WAITCLEAR, &result, NULL);
 		if(ret < 0)
 		{
@@ -1012,6 +1042,13 @@ int usb_thread(SceSize size, void *argp)
 			sceKernelExitDeleteThread(0);
 		}
 
+#ifdef __PSP2__
+        if(result & USB_EVENT_QUIT)
+        {
+            DEBUG_PRINTF("usb_thread exit\n");
+            break;
+        }
+#endif
 		if(result & USB_EVENT_ASYNC)
 		{
 			DEBUG_PRINTF("Async Request Done %d %d\n", g_async_req.retcode, g_async_req.recvsize);
@@ -1093,10 +1130,17 @@ int start_func(int size, void *p)
 	memcpy(usbdata[1].endp[1].desc, &endpdesc_full[1], sizeof(endpdesc_full[1]));
 	memcpy(usbdata[1].endp[2].desc, &endpdesc_full[2], sizeof(endpdesc_full[2]));
 
+#ifdef __PSP2__
+	g_driver.descriptor_hi = usbdata[0].devdesc;
+	g_driver.configuration_hi = &usbdata[0].config;
+	g_driver.descriptor = usbdata[1].devdesc;
+	g_driver.configuration = &usbdata[1].config;
+#else
 	g_driver.devp_hi = usbdata[0].devdesc;
 	g_driver.confp_hi = &usbdata[0].config;
 	g_driver.devp = usbdata[1].devdesc;
 	g_driver.confp = &usbdata[1].config;
+#endif
 
 	DEBUG_PRINTF("pusbdata %p\n", &usbdata);
 
@@ -1137,8 +1181,10 @@ int start_func(int size, void *p)
 		return -1;
 	}
 
+#ifndef __PSP2__
 	ret = hostfs_init();
 	DEBUG_PRINTF("hostfs_init: %d\n", ret);
+#endif
 
 	if(sceKernelStartThread(g_thid, 0, NULL))
 	{
@@ -1156,8 +1202,12 @@ int stop_func(int size, void *p)
 
 	if(g_thid >= 0)
 	{
+#ifdef __PSP2__
+        sceKernelSetEventFlag(g_mainevent, USB_EVENT_QUIT);
+#else
 		/* Should really just signal for completion */
 		sceKernelTerminateDeleteThread(g_thid);
+#endif
 		g_thid = -1;
 	}
 
@@ -1197,10 +1247,17 @@ struct UsbDriver g_driver =
 	&intp,
 	NULL, NULL, NULL, NULL,
 	(struct StringDescriptor *) strp,
+#ifdef __PSP2__
+    (struct StringDescriptor *) strp,
+    (struct StringDescriptor *) strp,
+#endif
 	usb_request, func28, usb_attach, usb_detach,
-	0, 
+	0,
 	start_func,
 	stop_func,
+#ifdef __PSP2__
+    0, 0,
+#endif
 	NULL
 };
 
@@ -1212,8 +1269,48 @@ int module_start(SceSize args, void *argp)
 	ret = sceUsbbdRegister(&g_driver);
 	memset(g_async_chan, 0, sizeof(g_async_chan));
 	DEBUG_PRINTF("sceUsbbdRegister %08X\n", ret);
-	DEBUG_PRINTF("g_driver 0x%p\n", &g_driver);
+	DEBUG_PRINTF("g_driver %p\n", &g_driver);
 	MODPRINTF("USB HostFS Driver (c) TyRaNiD 2k6\n");
+
+#ifdef __PSP2__
+	ret = ksceUdcdDeactivate();
+    if (ret < 0 && ret != SCE_UDCD_ERROR_INVALID_ARGUMENT) {
+        DEBUG_PRINTF("Error deactivating UDCD (0x%08X)\n", ret);
+        return SCE_KERNEL_START_SUCCESS;
+    }
+
+    ksceUdcdStop("USB_MTP_Driver", 0, NULL);
+    ksceUdcdStop("USBPSPCommunicationDriver", 0, NULL);
+    ksceUdcdStop("USBSerDriver", 0, NULL);
+    ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+
+    ret = ksceUdcdStart("USBDeviceControllerDriver", 0, NULL);
+    if (ret < 0) {
+        DEBUG_PRINTF("Error starting the USBDeviceControllerDriver driver (0x%08X)\n", ret);
+        return SCE_KERNEL_START_SUCCESS;
+    }
+
+    ret = ksceUdcdStart(HOSTFSDRIVER_NAME, 0, NULL);
+    if (ret < 0) {
+        DEBUG_PRINTF("Error starting the "
+                             HOSTFSDRIVER_NAME
+                             " driver (0x%08X)\n", ret);
+        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+        return SCE_KERNEL_START_SUCCESS;
+    }
+
+    ret = ksceUdcdActivate(HOSTFSDRIVER_PID);
+    if (ret < 0) {
+        DEBUG_PRINTF("Error activating the "
+                             HOSTFSDRIVER_NAME
+                             " driver (0x%08X)\n", ret);
+        ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
+        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+        return SCE_KERNEL_START_SUCCESS;
+    } else {
+        DEBUG_PRINTF("usbhostfs activated\n");
+    }
+#endif
 
 	return 0;
 }
@@ -1223,9 +1320,16 @@ int module_stop(SceSize args, void *argp)
 {
 	int ret;
 
+#ifdef __PSP2__
+	ksceUdcdDeactivate();
+	ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
+	ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+#endif
 	ret = sceUsbbdUnregister(&g_driver);
 	DEBUG_PRINTF("sceUsbbdUnregister %08X\n", ret);
+#ifndef __PSP2__
 	hostfs_term();
+#endif
 
 	return 0;
 }

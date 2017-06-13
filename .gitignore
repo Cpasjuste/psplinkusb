@@ -30,3 +30,8 @@
 
 # Debug files
 *.dSYM/
+
+# CLion
+.idea
+cmake-build*
+usbhostfs_pc/usbhostfs_pc
