@@ -18,3 +18,5 @@ execute_process(COMMAND "date" "+%Y.%m.%d" OUTPUT_VARIABLE BUILD_DATE OUTPUT_STR
 # usbhostfs module
 add_subdirectory(usbhostfs)
 
+# psplink module
+add_subdirectory(psplink)

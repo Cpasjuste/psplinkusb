@@ -8,7 +8,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     endif ()
 endif ()
 
-project(usbhostfs)
+project(psplink)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99 -D__PSP2__")
@@ -39,7 +39,7 @@ target_link_libraries(${PROJECT_NAME}
         -nostdlib
         )
 vita_create_self(${PROJECT_NAME}.skprx ${PROJECT_NAME}
-        CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/exports.yml
+        #CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/exports.yml
         UNSAFE)
 
 #add_custom_target(${PROJECT_NAME}.stubs

@@ -11,7 +11,7 @@
  * $Id: main.c 2189 2007-02-24 12:16:44Z tyranid $
  */
 #ifdef __PSP2__
-#include "psp2.h"
+#include "../psp2/psp2.h"
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -27,7 +27,16 @@
 #include "usbasync.h"
 
 #ifdef __PSP2__
-int psplinkSetK1(int k1) { return 0; };
+int psplinkSetK1(int k1) {
+    int ret;
+    if(k1 == 0) {
+        ENTER_SYSCALL(ret);
+        return ret;
+    } else {
+        EXIT_SYSCALL(k1);
+    }
+    return 0;
+};
 #else
 int psplinkSetK1(int k1);
 
@@ -1039,6 +1048,9 @@ int usb_thread(SceSize size, void *argp)
 		if(ret < 0)
 		{
 			DEBUG_PRINTF("Error waiting on event flag %08X\n", ret);
+#ifdef __PSP2__
+            break;
+#endif
 			sceKernelExitDeleteThread(0);
 		}
 
