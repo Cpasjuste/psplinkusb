@@ -80,7 +80,7 @@ typedef struct _SceUdcdDeviceRequest {
 #define sceKernelCreateSema ksceKernelCreateSema
 #define sceKernelSignalSema ksceKernelSignalSema
 #define sceKernelWaitSema ksceKernelWaitSema
-#define sceKernelCreateEventFlag(a, b, c, d) ksceKernelCreateEventFlag(a, 0, c, d)
+#define sceKernelCreateEventFlag(a, b, c, d) ksceKernelCreateEventFlag(a, 0x1000, c, d)
 #define sceKernelSetEventFlag ksceKernelSetEventFlag
 #define sceKernelClearEventFlag ksceKernelClearEventFlag
 #define sceKernelWaitEventFlag ksceKernelWaitEventFlag
