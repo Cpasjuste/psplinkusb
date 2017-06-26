@@ -11,6 +11,10 @@
  * $HeadURL: svn://svn.ps2dev.org/psp/trunk/psplinkusb/psplink/main.c $
  * $Id: main.c 2322 2007-09-30 17:49:32Z tyranid $
  */
+
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspkdebug.h>
@@ -23,6 +27,7 @@
 #include <pspsysmem_kernel.h>
 #include <pspthreadman_kernel.h>
 #include <psploadexec_kernel.h>
+#endif
 #include <usbhostfs.h>
 #include "memoryUID.h"
 #include "psplink.h"
@@ -38,7 +43,9 @@
 #include "modload.h"
 #include "decodeaddr.h"
 
+#ifndef __PSP2__
 PSP_MODULE_INFO("PSPLINK", 0x1000, 1, 1);
+#endif
 
 #define BOOTLOADER_NAME "PSPLINKLOADER"
 
@@ -48,11 +55,32 @@ void save_execargs(int argc, char **argv);
 
 int unload_loader(void)
 {
+#ifndef __PSP2__ 
 	SceModule *mod;
 	SceUID modid;
+#endif
 	int ret = 0;
 	int status;
 
+#ifdef __PSP2__
+    tai_module_info_t info;
+    info.size = sizeof(tai_module_info_t);
+    ret = taiGetModuleInfo(BOOTLOADER_NAME, &info);
+    if(ret >= 0)
+    {
+        DEBUG_PRINTF("Loader UID: %08X\n", info.modid);
+        ret = sceKernelStopModule(info.modid, 0, NULL, &status, NULL);
+        if(ret >= 0)
+        {
+            ret = sceKernelUnloadModule(info.modid);
+            DEBUG_PRINTF("Loader unloaded: 0x%08X\n", ret);
+        }
+    }
+    else
+    {
+        DEBUG_PRINTF("Couldn't find loader: 0x%08X\n", ret);
+    }
+#else
 	mod = sceKernelFindModuleByName(BOOTLOADER_NAME);
 	if(mod != NULL)
 	{
@@ -69,7 +97,7 @@ int unload_loader(void)
 	{
 		Kprintf("Couldn't find bootloader\n");
 	}
-
+#endif
 	return 0;
 }
 
@@ -95,11 +123,15 @@ void parse_sceargs(SceSize args, void *argp, int *argc, char **argv)
 
 void load_psplink_user(const char *bootpath)
 {
+#ifdef __PSP2__
+    DEBUG_PRINTF("load_psplink_user: not implemented\n");
+#else
 	char prx_path[MAXPATHLEN];
 
 	strcpy(prx_path, bootpath);
 	strcat(prx_path, "psplink_user.prx");
 	load_start_module(prx_path, 0, NULL);
+#endif
 }
 
 SceUID load_gdb(const char *bootpath, int argc, char **argv)
@@ -147,12 +179,21 @@ void psplinkStop(void)
 {
 	if(g_context.thevent >= 0)
 	{
+#ifdef __PSP2__
+        DEBUG_PRINTF("psplinkStop: not implemented\n");
+#else
 		sceKernelReleaseThreadEventHandler(g_context.thevent);
+#endif
 	}
 }
 
 void psplinkReset(void)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("Resetting psplink\n");
+    psplinkStop();
+    sceAppMgrLoadExec("app0:eboot.bin", NULL, NULL);
+#else
 #if _PSP_FW_VERSION >= 200
 	{
 		struct SceKernelLoadExecVSHParam param; 
@@ -232,6 +273,7 @@ void psplinkReset(void)
 		sceKernelLoadExec(g_context.bootfile, &le);
 	}
 #endif
+#endif // __PSP2__
 }
 
 void psplinkExitShell(void)
@@ -260,6 +302,9 @@ int RegisterExceptionDummy(void)
 /* Patch out the exception handler setup call for apps which come after us ;P */
 int psplinkPatchException(void)
 {
+#ifdef __PSP2__
+    DEBUG_PRINTF("psplinkPatchException: not implemented\n");
+#else
 	unsigned int *addr;
 	int intc;
 
@@ -272,7 +317,7 @@ int psplinkPatchException(void)
 		sceKernelIcacheInvalidateRange(addr, 4);
 	}
 	pspSdkEnableInterrupts(intc);
-
+#endif
 	return 0;
 }
 
@@ -280,7 +325,9 @@ void initialise(SceSize args, void *argp)
 {
 	struct ConfigContext ctx;
 	const char *init_dir = "host0:/";
+#ifndef __PSP2__
 	int (*g_sceUmdActivate)(int, const char *);
+#endif
 	int argc;
 	char *argv[MAX_ARGS];
 
@@ -338,6 +385,7 @@ void initialise(SceSize args, void *argp)
 		sceKernelExitGame();
 	}
 
+#ifndef __PSP2__
 	g_sceUmdActivate = (void*) libsFindExportByNid(refer_module_by_name("sceUmd_driver", NULL), 
 			"sceUmdUser", 0xC6183D47);
 	if(g_sceUmdActivate)
@@ -347,7 +395,7 @@ void initialise(SceSize args, void *argp)
 
 	/* Hook sceKernelExitGame */
 	apiHookByNid(refer_module_by_name("sceLoadExec", NULL), "LoadExecForUser", 0x05572A5F, exit_reset);
-
+#endif // __PSP2__
 	unload_loader();
 
 	psplinkPatchException();
@@ -356,12 +404,15 @@ void initialise(SceSize args, void *argp)
 	{
 		load_psplink_user(g_context.bootpath);
 	}
-
 	g_context.resetonexit = ctx.resetonexit;
 
+#ifndef __PSP2__
 	sceKernelRegisterDebugPutchar(NULL);
+#endif
 	enable_kprintf(1);
+#ifndef __PSP2__
 	debugHwInit();
+#endif
 	modLoad(g_context.bootpath);
 }
 
@@ -371,8 +422,14 @@ int main_thread(SceSize args, void *argp)
 	initialise(args, argp);
 
 	shellParseThread(0, NULL);
+#ifdef __PSP2__
+    while (1)
+    {
+        sceKernelDelayThreadCB(0xFFFFFFFF);
+    }
+#else
 	sceKernelSleepThread();
-
+#endif
 	return 0;
 }
 

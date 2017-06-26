@@ -11,10 +11,12 @@ endif ()
 project(psplink)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99 -D__PSP2__")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -D__PSP2__")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99 -D__PSP2__ -D_PSP_FW_VERSION=199")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -D__PSP2__ -D_PSP_FW_VERSION=199")
 
 include_directories(
+        ../usbhostfs
+        ../psp2
 )
 
 link_directories(
@@ -23,22 +25,19 @@ link_directories(
 
 add_executable(${PROJECT_NAME}
         main.c
+        shell.c
         )
 
 target_link_libraries(${PROJECT_NAME}
-        SceSysmemForDriver_stub
-        SceThreadmgrForDriver_stub
-        SceIofilemgrForDriver_stub
-        SceSysclibForDriver_stub
-        SceUdcdForDriver_stub
-        SceCpuForDriver_stub
-        taihenForKernel_stub
-        SceDebugForDriver_stub
-        k
+        SceAppMgr_stub
+        SceSysmem_stub
+        SceIofilemgr_stub
+        SceLibKernel_stub
+        SceKernelThreadMgr_stub
+        taihen_stub
         gcc
-        -nostdlib
         )
-vita_create_self(${PROJECT_NAME}.skprx ${PROJECT_NAME}
+vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
         #CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/exports.yml
         UNSAFE)
 

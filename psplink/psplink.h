@@ -14,7 +14,11 @@
 #ifndef __PSPLINK_H
 #define __PSPLINK_H
 
+#ifdef __KERNEL__
+#include <libk/stdint.h>
+#else
 #include <stdint.h>
+#endif
 #include "pspstdio.h"
 
 /* Event flags */
@@ -29,6 +33,11 @@
 #define DEFAULT_BAUDRATE 115200
 
 #ifdef DEBUG
+#ifdef __PSP2__
+#define DEBUG_START {}
+#include <psp2/kernel/clib.h>
+#define DEBUG_PRINTF sceClibPrintf
+#else
 #define DEBUG_START { int fd; fd = sceIoOpen("ms0:/debug.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0666); sceIoClose(fd); }
 #define DEBUG_PRINTF(fmt, ...) \
 { \
@@ -37,6 +46,7 @@
 	fdprintf(fd, fmt, ## __VA_ARGS__); \
 	sceIoClose(fd); \
 }
+#endif
 #else
 #define DEBUG_START
 #define DEBUG_PRINTF(fmt, ...)

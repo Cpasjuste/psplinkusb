@@ -1,7 +1,11 @@
 #ifndef __EXCEPTION_H__
 #define __EXCEPTION_H__
 
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <psptypes.h>
+#endif
 
 /* Define maximum number of thread exception context */
 #define PSPLINK_MAX_CONTEXT 8

@@ -11,6 +11,9 @@
  * $HeadURL: svn://svn.ps2dev.org/psp/trunk/psplinkusb/psplink/shell.c $
  * $Id: shell.c 2334 2007-11-03 16:47:05Z tyranid $
  */
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspsdk.h>
@@ -27,6 +30,7 @@
 #include <pspthreadman_kernel.h>
 #include <pspintrman_kernel.h>
 #include <psppower.h>
+#endif
 #include <stdint.h>
 #include <usbhostfs.h>
 #include <usbasync.h>
@@ -121,6 +125,35 @@ static SceUID get_thread_uid(const char *name, ReferFunc pRefer)
 
 static int threadmanlist_cmd(int argc, char **argv, enum SceKernelIdListType type, const char *name, threadmanprint_func pinfo)
 {
+#ifdef __PSP2__
+#define THREADS_START 0x40010000
+#define THREADS_RANGE 0x100000
+
+	int verbose = 0;
+
+	if(argc > 0)
+	{
+		if(strcmp(argv[0], "v") == 0)
+		{
+			verbose = 1;
+		}
+	}
+
+	int i = 1;
+	while (i <= THREADS_RANGE)
+	{
+		SceKernelThreadInfo status;
+		status.size = sizeof(SceKernelThreadInfo);
+		int ret = sceKernelGetThreadInfo(THREADS_START + i, &status);
+		if (ret >= 0) {
+			if(pinfo(THREADS_START + i, verbose) < 0)
+			{
+				SHELL_PRINT("ERROR: Unknown %s 0x%08X\n", name, THREADS_START + i);
+			}
+		}
+		i++;
+	}
+#else
 	SceUID ids[100];
 	int ret;
 	int count;
@@ -148,7 +181,7 @@ static int threadmanlist_cmd(int argc, char **argv, enum SceKernelIdListType typ
 			}
 		}
 	}
-
+#endif
 	return CMD_OK;
 }
 
@@ -223,6 +256,19 @@ static int print_threadinfo(SceUID uid, int verbose)
 		SHELL_PRINT("UID: 0x%08X - Name: %s\n", uid, info.name);
 		if(verbose)
 		{
+#ifdef __PSP2__
+            SHELL_PRINT("Attr: 0x%08X - Status: %d/%s- Entry: 0x%p\n", info.attr, info.status,
+                        get_thread_status(info.status, status), info.entry);
+            SHELL_PRINT("Stack: 0x%p - StackSize 0x%08X - GP: 0x%08X\n", info.stack, info.stackSize,
+                        0);
+            SHELL_PRINT("InitPri: %d - CurrPri: %d - WaitType %d\n", info.initPriority,
+                        info.currentPriority, info.waitType);
+            SHELL_PRINT("WaitId: 0x%08X - WakeupCount: %d - ExitStatus: 0x%08X\n", info.waitId,
+                        0, info.exitStatus);
+            SHELL_PRINT("RunClocks: %d - IntrPrempt: %d - ThreadPrempt: %d\n", info.runClocks,
+                        info.intrPreemptCount, info.threadPreemptCount);
+            SHELL_PRINT("ReleaseCount: %d, StackFree: %d\n", info.threadReleaseCount, sceKernelGetThreadStackFreeSize(uid));
+#else
 			SHELL_PRINT("Attr: 0x%08X - Status: %d/%s- Entry: 0x%p\n", info.attr, info.status, 
 					get_thread_status(info.status, status), info.entry);
 			SHELL_PRINT("Stack: 0x%p - StackSize 0x%08X - GP: 0x%08X\n", info.stack, info.stackSize,
@@ -238,6 +284,7 @@ static int print_threadinfo(SceUID uid, int verbose)
 			{
 				SHELL_PRINT("Current Dir: %s\n", cwd);
 			}
+#endif
 		}
 	}
 

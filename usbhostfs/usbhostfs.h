@@ -357,8 +357,13 @@ struct BulkCommand
 
 #ifdef DEBUG
 #ifdef __PSP2__
+#ifdef __KERNEL__
 #include <psp2kern/kernel/sysmem.h>
 #define DEBUG_PRINTF ksceDebugPrintf
+#else
+#include <psp2/kernel/clib.h>
+#define DEBUG_PRINTF sceClibPrintf
+#endif
 #else
 #define DEBUG_PRINTF(fmt, ...) Kprintf("%s: " fmt, MODULE_NAME, ## __VA_ARGS__)
 #endif

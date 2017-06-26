@@ -13,6 +13,7 @@
 #ifndef __MEMORYUID_H__
 #define __MEMORYUID_H__
 
+#ifndef __PSP2__
 #include <pspsysmem_kernel.h>
 
 #define UIDLIST_START_1_0 0x8800d030
@@ -28,4 +29,5 @@ void printUIDEntry(uidControlBlock *entry);
 #define findObjectByUIDWithParent(uid, parent) findUIDObject(uid, NULL, parent)
 #define findObjectByNameWithParent(name, parent) findUIDObject(0, name, parent)
 
+#endif // __PSP2__
 #endif

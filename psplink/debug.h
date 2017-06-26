@@ -13,6 +13,7 @@
 #ifndef __DEBUGINC_H__
 #define __DEBUGINC_H__
 
+#ifndef __PSP2__
 #include <pspkernel.h>
 #include "exception.h"
 
@@ -78,4 +79,5 @@ int debugHandleException(struct PsplinkContext *ctx);
 void debugHwInit(void);
 void debugPrintHWRegs(void);
 
+#endif // __PSP2__
 #endif

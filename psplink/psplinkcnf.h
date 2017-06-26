@@ -10,8 +10,12 @@
  * $HeadURL: svn://svn.ps2dev.org/psp/trunk/psplinkusb/psplink/psplinkcnf.h $
  * $Id: psplinkcnf.h 1818 2006-03-06 18:34:38Z tyranid $
  */
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
+#endif
 #include "psplink.h"
 #include "util.h"
 
