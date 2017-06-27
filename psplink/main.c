@@ -55,32 +55,14 @@ void save_execargs(int argc, char **argv);
 
 int unload_loader(void)
 {
-#ifndef __PSP2__ 
+#ifdef __PSP2__
+    DEBUG_PRINTF("unload_loader: not implemented\n");
+#else
 	SceModule *mod;
 	SceUID modid;
-#endif
 	int ret = 0;
 	int status;
 
-#ifdef __PSP2__
-    tai_module_info_t info;
-    info.size = sizeof(tai_module_info_t);
-    ret = taiGetModuleInfo(BOOTLOADER_NAME, &info);
-    if(ret >= 0)
-    {
-        DEBUG_PRINTF("Loader UID: %08X\n", info.modid);
-        ret = sceKernelStopModule(info.modid, 0, NULL, &status, NULL);
-        if(ret >= 0)
-        {
-            ret = sceKernelUnloadModule(info.modid);
-            DEBUG_PRINTF("Loader unloaded: 0x%08X\n", ret);
-        }
-    }
-    else
-    {
-        DEBUG_PRINTF("Couldn't find loader: 0x%08X\n", ret);
-    }
-#else
 	mod = sceKernelFindModuleByName(BOOTLOADER_NAME);
 	if(mod != NULL)
 	{
@@ -136,12 +118,17 @@ void load_psplink_user(const char *bootpath)
 
 SceUID load_gdb(const char *bootpath, int argc, char **argv)
 {
+#ifdef __PSP2__
+    DEBUG_PRINTF("load_gdb: not implemented\n");
+    return -1;
+#else
 	char prx_path[MAXPATHLEN];
 
 	strcpy(prx_path, bootpath);
 	strcat(prx_path, "usbgdb.prx");
 	g_context.gdb = 1;
 	return load_start_module(prx_path, argc, argv);
+#endif
 }
 
 int reset_thread(SceSize args, void *argp)
@@ -153,6 +140,9 @@ int reset_thread(SceSize args, void *argp)
 
 void exit_reset(void)
 {
+#ifdef __PSP2__
+    DEBUG_PRINTF("exit_reset: not implemented\n");
+#else
 	psplinkSetK1(0);
 
 	if(g_context.resetonexit)
@@ -173,6 +163,7 @@ void exit_reset(void)
 	}
 
 	sceKernelExitThread(0);
+#endif
 }
 
 void psplinkStop(void)
@@ -190,9 +181,7 @@ void psplinkStop(void)
 void psplinkReset(void)
 {
 #ifdef __PSP2__
-    SHELL_PRINT("Resetting psplink\n");
-    psplinkStop();
-    sceAppMgrLoadExec("app0:eboot.bin", NULL, NULL);
+    DEBUG_PRINTF("psplinkReset: not implemented\n");
 #else
 #if _PSP_FW_VERSION >= 200
 	{
@@ -278,6 +267,9 @@ void psplinkReset(void)
 
 void psplinkExitShell(void)
 {
+#ifdef __PSP2__
+    DEBUG_PRINTF("psplinkReset: not implemented\n");
+#else
 #if _PSP_FW_VERSION >= 200
 	{
 		sceKernelExitVSHVSH(NULL);
@@ -287,6 +279,7 @@ void psplinkExitShell(void)
 		sceKernelExitGame();
 	}
 #endif
+#endif//_PSP2__
 }
 
 int psplinkPresent(void)
@@ -323,6 +316,8 @@ int psplinkPatchException(void)
 
 void initialise(SceSize args, void *argp)
 {
+	DEBUG_PRINTF("initialise\n");
+
 	struct ConfigContext ctx;
 	const char *init_dir = "host0:/";
 #ifndef __PSP2__
@@ -332,13 +327,17 @@ void initialise(SceSize args, void *argp)
 	char *argv[MAX_ARGS];
 
 	memset(&g_context, 0, sizeof(g_context));
+#ifndef __PSP2__
 	map_firmwarerev();
 	exceptionInit();
+#endif
 	g_context.thevent = -1;
+	DEBUG_PRINTF("parse_sceargs\n");
 	parse_sceargs(args, argp, &argc, argv);
 
 	if(argc > 0)
 	{
+		DEBUG_PRINTF("argc > 0\n");
 		char *lastdir;
 
 		g_context.bootfile = argv[0];
@@ -349,8 +348,9 @@ void initialise(SceSize args, void *argp)
 		}
 	}
 
+#ifndef __PSP2__
 	configLoad(g_context.bootpath, &ctx);
-
+#endif
 	if(ctx.pid)
 	{
 		g_context.pid = ctx.pid;
@@ -360,8 +360,13 @@ void initialise(SceSize args, void *argp)
 		g_context.pid = HOSTFSDRIVER_PID;
 	}
 
+#ifndef __PSP2__
 	ttyInit();
+#endif
+
+	DEBUG_PRINTF("init_usbhost\n");
 	init_usbhost(g_context.bootpath);
+    DEBUG_PRINTF("init_usbhost OK\n");
 
 #if _PSP_FW_VERSION >= 200
 	if(argc > 1)
@@ -370,6 +375,7 @@ void initialise(SceSize args, void *argp)
 	}
 #else
 	{
+#ifndef __PSP2__
 		struct SavedContext *save = (struct SavedContext *) SAVED_ADDR;
 		if(save->magic == SAVED_MAGIC)
 		{
@@ -377,12 +383,18 @@ void initialise(SceSize args, void *argp)
 			save->magic = 0;
 			g_context.rebootkey = save->rebootkey;
 		}
+#endif
 	}
 #endif
 
+	DEBUG_PRINTF("shellInit\n");
 	if(shellInit(init_dir) < 0)
 	{
+#ifdef __PSP2__
+        DEBUG_PRINTF("shellInit: failed\n");
+#else
 		sceKernelExitGame();
+#endif
 	}
 
 #ifndef __PSP2__
@@ -408,12 +420,10 @@ void initialise(SceSize args, void *argp)
 
 #ifndef __PSP2__
 	sceKernelRegisterDebugPutchar(NULL);
-#endif
 	enable_kprintf(1);
-#ifndef __PSP2__
 	debugHwInit();
-#endif
 	modLoad(g_context.bootpath);
+#endif
 }
 
 /* Simple thread */
@@ -438,12 +448,30 @@ int module_start(SceSize args, void *argp)
 {
 	int thid;
 
+    DEBUG_PRINTF("module_start\n");
+
 	/* Create a high priority thread */
+#ifdef __PSP2__
+    thid = sceKernelCreateThread("Psp2Link", main_thread, 64, 32*1024, 0, NULL);
+#else
 	thid = sceKernelCreateThread("PspLink", main_thread, 8, 64*1024, 0, NULL);
+#endif
 	if(thid >= 0)
 	{
 		sceKernelStartThread(thid, args, argp);
 	}
 
+    DEBUG_PRINTF("sceKernelStartThread: 0x%08X\n", thid);
+
 	return 0;
 }
+
+#ifdef __PSP2__
+void _start() __attribute__ ((weak, alias ("module_start")));
+int module_stop(SceSize args, void *argp)
+{
+    stop_usbhost();
+
+    return SCE_KERNEL_STOP_SUCCESS;
+}
+#endif

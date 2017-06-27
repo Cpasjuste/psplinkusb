@@ -10,6 +10,9 @@
  * $HeadURL: svn://svn.pspdev.org/psp/branches/psplinkusb/usbshell/main.c $
  * $Id: main.c 2034 2006-10-18 17:02:37Z tyranid $
  */
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspkdebug.h>
@@ -18,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#endif
 #include <usbhostfs.h>
 #include <usbasync.h>
 #include "tty.h"
@@ -74,7 +78,9 @@ int usbShellInit(void)
 {
 	usbAsyncRegister(ASYNC_SHELL, &g_endp);
 	usbAsyncRegister(ASYNC_STDOUT, &g_stdin);
+#ifndef __PSP2__
 	ttySetUsbHandler(usbStdoutPrint, usbStderrPrint, usbStdinRead);
+#endif
 	usbWaitForConnect();
 	psplinkPrintPrompt();
 
@@ -149,6 +155,21 @@ static void cb(struct prnt_ctx *ctx, int type)
 
 int shprintf(const char *fmt, ...)
 {
+#ifdef __PSP2__
+	struct prnt_ctx ctx;
+	va_list opt;
+
+	cb(&ctx, 0x200);
+
+	memset(ctx.buf, 0, 128);
+
+	va_start(opt, fmt);
+	int len = vsnprintf((char *) ctx.buf, 128, fmt, opt);
+	va_end(opt);
+
+	ctx.len = (unsigned short) len;
+	cb(&ctx, 0x201);
+#else
 	struct prnt_ctx ctx;
 	va_list opt;
 
@@ -159,6 +180,7 @@ int shprintf(const char *fmt, ...)
 	prnt((prnt_callback) cb, (void*) &ctx, fmt, opt);
 
 	va_end(opt);
+#endif
 
 	return 0;
 }

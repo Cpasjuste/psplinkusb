@@ -30,8 +30,8 @@
 #include <pspthreadman_kernel.h>
 #include <pspintrman_kernel.h>
 #include <psppower.h>
-#endif
 #include <stdint.h>
+#endif
 #include <usbhostfs.h>
 #include <usbasync.h>
 #include "memoryUID.h"
@@ -73,6 +73,7 @@ void psplinkPrintPrompt(void)
 	SHELL_PRINT_CMD(SHELL_CMD_SUCCESS, "0x%08X", 0);
 }
 
+#ifndef __PSP2__
 static SceUID get_module_uid(const char *name)
 {
 	char *endp;
@@ -126,6 +127,9 @@ static SceUID get_thread_uid(const char *name, ReferFunc pRefer)
 static int threadmanlist_cmd(int argc, char **argv, enum SceKernelIdListType type, const char *name, threadmanprint_func pinfo)
 {
 #ifdef __PSP2__
+    SHELL_PRINT("threadmanlist_cmd: not implemented\n");
+    return CMD_OK;
+/*
 #define THREADS_START 0x40010000
 #define THREADS_RANGE 0x100000
 
@@ -153,6 +157,7 @@ static int threadmanlist_cmd(int argc, char **argv, enum SceKernelIdListType typ
 		}
 		i++;
 	}
+*/
 #else
 	SceUID ids[100];
 	int ret;
@@ -181,12 +186,17 @@ static int threadmanlist_cmd(int argc, char **argv, enum SceKernelIdListType typ
 			}
 		}
 	}
-#endif
+
 	return CMD_OK;
+#endif
 }
 
 static int threadmaninfo_cmd(int argc, char **argv, const char *name, threadmanprint_func pinfo, ReferFunc pRefer)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("threadmanlist_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	SceUID uid;
 	int ret = CMD_ERROR;
 
@@ -203,6 +213,7 @@ static int threadmaninfo_cmd(int argc, char **argv, const char *name, threadmanp
 	}
 
 	return ret;
+#endif
 }
 
 static const char* get_thread_status(int stat, char *str)
@@ -243,6 +254,11 @@ static const char* get_thread_status(int stat, char *str)
 
 static int print_threadinfo(SceUID uid, int verbose)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("print_threadinfo: not implemented\n");
+    return CMD_OK;
+#else
+
 	SceKernelThreadInfo info;
 	char status[256];
 	char cwd[512];
@@ -256,19 +272,6 @@ static int print_threadinfo(SceUID uid, int verbose)
 		SHELL_PRINT("UID: 0x%08X - Name: %s\n", uid, info.name);
 		if(verbose)
 		{
-#ifdef __PSP2__
-            SHELL_PRINT("Attr: 0x%08X - Status: %d/%s- Entry: 0x%p\n", info.attr, info.status,
-                        get_thread_status(info.status, status), info.entry);
-            SHELL_PRINT("Stack: 0x%p - StackSize 0x%08X - GP: 0x%08X\n", info.stack, info.stackSize,
-                        0);
-            SHELL_PRINT("InitPri: %d - CurrPri: %d - WaitType %d\n", info.initPriority,
-                        info.currentPriority, info.waitType);
-            SHELL_PRINT("WaitId: 0x%08X - WakeupCount: %d - ExitStatus: 0x%08X\n", info.waitId,
-                        0, info.exitStatus);
-            SHELL_PRINT("RunClocks: %d - IntrPrempt: %d - ThreadPrempt: %d\n", info.runClocks,
-                        info.intrPreemptCount, info.threadPreemptCount);
-            SHELL_PRINT("ReleaseCount: %d, StackFree: %d\n", info.threadReleaseCount, sceKernelGetThreadStackFreeSize(uid));
-#else
 			SHELL_PRINT("Attr: 0x%08X - Status: %d/%s- Entry: 0x%p\n", info.attr, info.status, 
 					get_thread_status(info.status, status), info.entry);
 			SHELL_PRINT("Stack: 0x%p - StackSize 0x%08X - GP: 0x%08X\n", info.stack, info.stackSize,
@@ -284,11 +287,11 @@ static int print_threadinfo(SceUID uid, int verbose)
 			{
 				SHELL_PRINT("Current Dir: %s\n", cwd);
 			}
-#endif
 		}
 	}
 
 	return ret;
+#endif
 }
 
 static int thlist_cmd(int argc, char **argv, unsigned int *vRet)
@@ -345,48 +348,92 @@ static int thread_do_cmd(const char *name, const char *type, ReferFunc refer, in
 
 static int thsusp_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thsusp_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "suspend", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelSuspendThread);
+#endif
 }
 
 static int thspuser_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thspuser_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	sceKernelSuspendAllUserThreads();
 
 	return CMD_OK;
+#endif
 }
 
 static int thresm_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thresm_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "resume", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelResumeThread);
+#endif
 }
 
 static int thwake_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thwake_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "wakeup", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelWakeupThread);
+#endif
 }
 
 static int thterm_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thterm_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "terminate", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelTerminateThread);
+#endif
 }
 
 static int thdel_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thdel_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "delete", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelDeleteThread);
+#endif
 }
 
 static int thtdel_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thtdel_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "terminate delete", (ReferFunc) pspSdkReferThreadStatusByName, sceKernelTerminateDeleteThread);
+#endif
 }
 
 static int thctx_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thctx_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "get context", (ReferFunc) pspSdkReferThreadStatusByName, threadFindContext);
+#endif
 }
 
 static int thpri_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("thpri_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	SceUID uid;
 	int ret = CMD_ERROR;
 	int err;
@@ -406,6 +453,7 @@ static int thpri_cmd(int argc, char **argv, unsigned int *vRet)
 	}
 
 	return ret;
+#endif
 }
 
 static int thcreat_cmd(int argc, char **argv, unsigned int *vRet)
@@ -451,6 +499,10 @@ static int thcreat_cmd(int argc, char **argv, unsigned int *vRet)
 
 static int print_eventinfo(SceUID uid, int verbose)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("print_eventinfo: not implemented\n");
+    return CMD_OK;
+#else
 	SceKernelEventFlagInfo info;
 	int ret;
 
@@ -469,6 +521,7 @@ static int print_eventinfo(SceUID uid, int verbose)
 	}
 
 	return ret;
+#endif
 }
 
 static int evlist_cmd(int argc, char **argv, unsigned int *vRet)
@@ -478,16 +531,30 @@ static int evlist_cmd(int argc, char **argv, unsigned int *vRet)
 
 static int evinfo_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("evinfo_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return threadmaninfo_cmd(argc, argv, "EventFlag", print_eventinfo, (ReferFunc) pspSdkReferEventFlagStatusByName);
+#endif
 }
 
 static int evdel_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("evdel_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	return thread_do_cmd(argv[0], "delete", (ReferFunc) pspSdkReferEventFlagStatusByName, sceKernelDeleteEventFlag);
+#endif
 }
 
 static int evset_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("evset_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	SceUID uid;
 	unsigned int bits;
 	int ret;
@@ -506,10 +573,15 @@ static int evset_cmd(int argc, char **argv, unsigned int *vRet)
 	}
 
 	return CMD_OK;
+#endif
 }
 
 static int evclr_cmd(int argc, char **argv, unsigned int *vRet)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("evclr_cmd: not implemented\n");
+    return CMD_OK;
+#else
 	SceUID uid;
 	unsigned int bits;
 	int ret;
@@ -528,10 +600,15 @@ static int evclr_cmd(int argc, char **argv, unsigned int *vRet)
 	}
 
 	return CMD_OK;
+#endif
 }
 
 static int print_semainfo(SceUID uid, int verbose)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("print_semainfo: not implemented\n");
+    return CMD_OK;
+#else
 	SceKernelSemaInfo info;
 	int ret;
 
@@ -550,6 +627,7 @@ static int print_semainfo(SceUID uid, int verbose)
 	}
 
 	return ret;
+#endif
 }
 
 static int smlist_cmd(int argc, char **argv, unsigned int *vRet)
@@ -569,6 +647,10 @@ static int smdel_cmd(int argc, char **argv, unsigned int *vRet)
 
 static int print_mboxinfo(SceUID uid, int verbose)
 {
+#ifdef __PSP2__
+    SHELL_PRINT("print_mboxinfo: not implemented\n");
+    return CMD_OK;
+#else
 	SceKernelMbxInfo info;
 	int ret;
 
@@ -587,6 +669,7 @@ static int print_mboxinfo(SceUID uid, int verbose)
 	}
 
 	return ret;
+#endif
 }
 
 static int mxlist_cmd(int argc, char **argv, unsigned int *vRet)
@@ -596,6 +679,7 @@ static int mxlist_cmd(int argc, char **argv, unsigned int *vRet)
 
 static int mxinfo_cmd(int argc, char **argv, unsigned int *vRet)
 {
+
 	return threadmaninfo_cmd(argc, argv, "Message Box", print_mboxinfo, (ReferFunc) pspSdkReferMboxStatusByName);
 }
 
@@ -1734,6 +1818,7 @@ static int reset_cmd(int argc, char **argv, unsigned int *vRet)
 
 	return CMD_OK;
 }
+#endif
 
 static int list_dir(const char *name)
 {
@@ -1842,6 +1927,7 @@ static int ls_cmd(int argc, char **argv, unsigned int *vRet)
 	return CMD_OK;
 }
 
+#ifndef __PSP2__
 static int chdir_cmd(int argc, char **argv, unsigned int *vRet)
 {
 	char *dir;
@@ -4187,6 +4273,7 @@ static int exit_cmd(int argc, char **argv, unsigned int *vRet)
 {
 	return CMD_EXITSHELL;
 }
+#endif
 
 /* Define the list of commands */
 const struct sh_command commands[] = {

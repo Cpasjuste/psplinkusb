@@ -35,8 +35,13 @@
 #ifdef DEBUG
 #ifdef __PSP2__
 #define DEBUG_START {}
+#ifdef __KERNEL__
+#include <psp2kern/kernel/sysmem.h>
+#define DEBUG_PRINTF ksceDebugPrintf
+#else
 #include <psp2/kernel/clib.h>
 #define DEBUG_PRINTF sceClibPrintf
+#endif
 #else
 #define DEBUG_START { int fd; fd = sceIoOpen("ms0:/debug.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0666); sceIoClose(fd); }
 #define DEBUG_PRINTF(fmt, ...) \

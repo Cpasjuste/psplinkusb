@@ -6,3 +6,19 @@ usbhostfs:
   main:
     start: module_start
     stop: module_stop
+  modules:
+    usbhostfs:
+      syscall: true
+      functions:
+        - usbAsyncRegister
+        - usbAsyncUnregister
+        - usbAsyncRead
+        - usbAsyncReadWithTimeout
+        - usbAsyncWrite
+        - usbAsyncFlush
+        - usbWaitForConnect
+        - usbWriteBulkData
+        - usbLockBus
+        - usbUnlockBus
+        - usbStart
+        - usbStop

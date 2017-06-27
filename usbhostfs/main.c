@@ -11,7 +11,7 @@
  * $Id: main.c 2189 2007-02-24 12:16:44Z tyranid $
  */
 #ifdef __PSP2__
-#include "../psp2/psp2.h"
+#include "psp2.h"
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -1273,6 +1273,70 @@ struct UsbDriver g_driver =
 	NULL
 };
 
+#ifdef __PSP2__
+int usbStart(const char *bootpath)
+{
+    int state;
+    ENTER_SYSCALL(state);
+
+    int ret = ksceUdcdDeactivate();
+    if (ret < 0 && ret != SCE_UDCD_ERROR_INVALID_ARGUMENT)
+    {
+        DEBUG_PRINTF("Error deactivating UDCD (0x%08X)\n", ret);
+        EXIT_SYSCALL(state);
+        return -1;
+    }
+
+    ksceUdcdStop("USB_MTP_Driver", 0, NULL);
+    ksceUdcdStop("USBPSPCommunicationDriver", 0, NULL);
+    ksceUdcdStop("USBSerDriver", 0, NULL);
+    ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+
+    ret = ksceUdcdStart("USBDeviceControllerDriver", 0, NULL);
+    if (ret < 0)
+    {
+        DEBUG_PRINTF("Error starting the USBDeviceControllerDriver driver (0x%08X)\n", ret);
+        EXIT_SYSCALL(state);
+        return -1;
+    }
+
+    ret = ksceUdcdStart(HOSTFSDRIVER_NAME, 0, NULL);
+    if (ret < 0)
+    {
+        DEBUG_PRINTF("Error starting the "HOSTFSDRIVER_NAME" driver (0x%08X)\n", ret);
+        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+        EXIT_SYSCALL(state);
+        return -1;
+    }
+
+    ret = ksceUdcdActivate(HOSTFSDRIVER_PID);
+    if (ret < 0) {
+        DEBUG_PRINTF("Error activating the "HOSTFSDRIVER_NAME" driver (0x%08X)\n", ret);
+        ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
+        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+        EXIT_SYSCALL(state);
+        return -1;
+    }
+
+    EXIT_SYSCALL(state);
+    return 0;
+}
+
+int usbStop() {
+
+    int state;
+    ENTER_SYSCALL(state);
+
+    ksceUdcdDeactivate();
+    ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
+    ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+
+    EXIT_SYSCALL(state);
+    return 0;
+}
+
+#endif
+
 /* Entry point */
 int module_start(SceSize args, void *argp)
 {
@@ -1285,43 +1349,7 @@ int module_start(SceSize args, void *argp)
 	MODPRINTF("USB HostFS Driver (c) TyRaNiD 2k6\n");
 
 #ifdef __PSP2__
-	ret = ksceUdcdDeactivate();
-    if (ret < 0 && ret != SCE_UDCD_ERROR_INVALID_ARGUMENT) {
-        DEBUG_PRINTF("Error deactivating UDCD (0x%08X)\n", ret);
-        return SCE_KERNEL_START_SUCCESS;
-    }
-
-    ksceUdcdStop("USB_MTP_Driver", 0, NULL);
-    ksceUdcdStop("USBPSPCommunicationDriver", 0, NULL);
-    ksceUdcdStop("USBSerDriver", 0, NULL);
-    ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
-
-    ret = ksceUdcdStart("USBDeviceControllerDriver", 0, NULL);
-    if (ret < 0) {
-        DEBUG_PRINTF("Error starting the USBDeviceControllerDriver driver (0x%08X)\n", ret);
-        return SCE_KERNEL_START_SUCCESS;
-    }
-
-    ret = ksceUdcdStart(HOSTFSDRIVER_NAME, 0, NULL);
-    if (ret < 0) {
-        DEBUG_PRINTF("Error starting the "
-                             HOSTFSDRIVER_NAME
-                             " driver (0x%08X)\n", ret);
-        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
-        return SCE_KERNEL_START_SUCCESS;
-    }
-
-    ret = ksceUdcdActivate(HOSTFSDRIVER_PID);
-    if (ret < 0) {
-        DEBUG_PRINTF("Error activating the "
-                             HOSTFSDRIVER_NAME
-                             " driver (0x%08X)\n", ret);
-        ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
-        ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
-        return SCE_KERNEL_START_SUCCESS;
-    } else {
-        DEBUG_PRINTF("usbhostfs activated\n");
-    }
+    usbStart(NULL);
 #endif
 
 	return 0;
@@ -1333,10 +1361,9 @@ int module_stop(SceSize args, void *argp)
 	int ret;
 
 #ifdef __PSP2__
-	ksceUdcdDeactivate();
-	ksceUdcdStop(HOSTFSDRIVER_NAME, 0, NULL);
-	ksceUdcdStop("USBDeviceControllerDriver", 0, NULL);
+    usbStop();
 #endif
+
 	ret = sceUsbbdUnregister(&g_driver);
 	DEBUG_PRINTF("sceUsbbdUnregister %08X\n", ret);
 #ifndef __PSP2__

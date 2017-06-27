@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
+enable_language(ASM)
+
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if (DEFINED ENV{VITASDK})
         set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
@@ -21,29 +23,35 @@ include_directories(
 
 link_directories(
         ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/usbhostfs/usbhostfs.stubs
 )
 
 add_executable(${PROJECT_NAME}
         main.c
         shell.c
+        usbshell.c
+        util.c
+        ../psp2/setjmp.S
         )
 
 target_link_libraries(${PROJECT_NAME}
+        k
+        gcc
         SceAppMgr_stub
         SceSysmem_stub
         SceIofilemgr_stub
         SceLibKernel_stub
+        SceProcessmgr_stub
         SceKernelThreadMgr_stub
+        #SceLibc_stub
+        usbhostfs_stub
         taihen_stub
-        gcc
         )
-vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
-        #CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/exports.yml
-        UNSAFE)
 
-#add_custom_target(${PROJECT_NAME}.stubs
-#        COMMAND rm -rf ${CMAKE_SOURCE_DIR}/knet/stub
-#        COMMAND ${VITASDK}/bin/vita-libs-gen ${CMAKE_SOURCE_DIR}/knet/db.yml ${CMAKE_SOURCE_DIR}/knet/stub
-#        COMMAND VITASDK=${VITASDK} make -C ${CMAKE_SOURCE_DIR}/knet/stub
-#        )
-#add_dependencies(${PROJECT_NAME}.elf ${PROJECT_NAME}.stubs)
+set_target_properties(${PROJECT_NAME}
+        PROPERTIES LINK_FLAGS "-nostdlib"
+        )
+
+vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
+        CONFIG ${CMAKE_SOURCE_DIR}/psp2/psplink_exports.yml
+        UNSAFE)

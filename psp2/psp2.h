@@ -2,18 +2,29 @@
 #define _PSP2_H_
 
 #include <libk/stdio.h>
+#include <libk/stdlib.h>
 #include <libk/string.h>
+//#include <libk/stdint.h>
 #include <psp2kern/udcd.h>
 #include <psp2kern/types.h>
 #include <psp2kern/kernel/threadmgr.h>
 #include <psp2kern/kernel/cpu.h>
 #include <psp2kern/io/fcntl.h>
 #include <psp2kern/kernel/modulemgr.h>
+#include <taihen.h>
 
 typedef unsigned int u32;
+typedef unsigned long u64;
 
 #define PSP_EVENT_WAITOR SCE_EVENT_WAITOR
 #define PSP_EVENT_WAITCLEAR SCE_EVENT_WAITCLEAR
+
+#define PSP_THREAD_RUNNING SCE_THREAD_RUNNING
+#define PSP_THREAD_READY SCE_THREAD_READY
+#define PSP_THREAD_WAITING SCE_THREAD_WAITING
+#define PSP_THREAD_SUSPEND SCE_THREAD_SUSPEND
+#define PSP_THREAD_STOPPED SCE_THREAD_STOPPED
+#define PSP_THREAD_KILLED SCE_THREAD_KILLED
 
 struct UsbData {
     unsigned char devdesc[20];
@@ -62,6 +73,8 @@ typedef struct _SceUdcdDeviceRequest {
     void *physicalAddress;
 } _SceUdcdDeviceRequest;
 
+//TODO: fixme
+
 #define UsbDriver SceUdcdDriver
 #define UsbdDeviceReq _SceUdcdDeviceRequest
 #define DeviceDescriptor SceUdcdDeviceDescriptor
@@ -76,6 +89,9 @@ typedef struct _SceUdcdDeviceRequest {
 #define sceUsbbdReqSend ksceUdcdReqSend
 #define DeviceRequest SceUdcdEP0DeviceRequest
 #define StringDescriptor SceUdcdStringDescriptor
+
+#define sceKernelStopModule ksceKernelStopModule
+#define sceKernelUnloadModule ksceKernelUnloadModule
 
 #define sceKernelCreateSema ksceKernelCreateSema
 #define sceKernelSignalSema ksceKernelSignalSema

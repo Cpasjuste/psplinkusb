@@ -11,6 +11,9 @@
  * $HeadURL: svn://svn.ps2dev.org/psp/trunk/psplinkusb/psplink/util.c $
  * $Id: util.c 2322 2007-09-30 17:49:32Z tyranid $
  */
+#ifdef __PSP2__
+#include "psp2_user.h"
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspsdk.h>
@@ -21,6 +24,7 @@
 #include <pspusbstor.h>
 #include <pspumd.h>
 #include <psputilsforkernel.h>
+#endif
 #include <usbhostfs.h>
 #include "psplink.h"
 #include "util.h"
@@ -388,6 +392,7 @@ int load_start_module(const char *name, int argc, char **argv)
 void map_firmwarerev(void)
 {
 
+#ifndef __PSP2__
 #if _PSP_FW_VERSION > 200
 	g_QueryModuleInfo = sceKernelQueryModuleInfo;
 	g_GetModuleIdList = sceKernelGetModuleIdList;
@@ -408,12 +413,28 @@ void map_firmwarerev(void)
 		g_isv1 = 0;
 	}
 #endif
+#endif
 }
 
 int sceUsb_E20B23A6(int pid, int power);
 
 int init_usbhost(const char *bootpath)
 {
+#ifdef __PSP2__
+	g_usbhoststate = USB_ON;
+	return 0;
+	/*
+    usbStop();
+
+	int ret = usbStart(bootpath);
+    if(ret == 0) {
+        g_usbhoststate = USB_ON;
+        return 0;
+    } else {
+        return -1;
+    }
+    */
+#else
 	int retVal;
 	char prx_path[MAXPATHLEN];
 
@@ -455,10 +476,14 @@ int init_usbhost(const char *bootpath)
 	while(0);
 
 	return retVal;
+#endif
 }
 
 int stop_usbhost(void)
 {
+#ifdef __PSP2__
+	//usbStop();
+#else
 	int retVal;
 
 	if((g_usbhoststate != USB_ON))
@@ -481,7 +506,7 @@ int stop_usbhost(void)
     if (retVal != 0) {
 		Kprintf("Error stopping USB BUS driver (0x%08X)\n", retVal);
 	}
-
+#endif
 	g_usbhoststate = USB_OFF;
 
 	return 0;
@@ -735,6 +760,7 @@ int decode_hexstr(const char *str, unsigned char *data, int max)
 	return hexlen / 2;
 }
 
+#ifndef __PSP2__
 static SceUID module_refer(SceModule *pMod, SceKernelModuleInfo *info)
 {
 	SceUID uid = -1;
@@ -865,16 +891,15 @@ int psplinkReferModule(SceUID uid, SceKernelModuleInfo *info)
 
 	return ret;
 }
+#endif
 
 static int is_nan(float *val)
 {
 	unsigned int conv;
-	int sign;
 	int exp;
 	int mantissa;
 
 	conv = *((unsigned int *) val);
-	sign = (conv >> 31) & 1;
 
 	exp = (conv >> 23) & 0xff;
 	mantissa = conv & 0x7fffff;
@@ -918,7 +943,6 @@ static int is_inf(float *val)
 static char get_num(float *val, int *exp)
 {
 	int digit;
-	float tmp;
 	char ret = '0';
 
 	if((*exp)++ < 16)
@@ -927,7 +951,6 @@ static char get_num(float *val, int *exp)
 		if((digit >= 0) && (digit < 10))
 		{
 			ret = digit + '0';
-			tmp = (float) digit;
 			*val = (*val - digit)*10.0f;
 		}
 	}
@@ -1111,6 +1134,7 @@ void f_cvt(float *val, char *buf, int bufsize, int precision, int mode)
 	return;
 }
 
+#ifndef __PSP2__
 unsigned int *get_debug_register(void)
 {
 	unsigned int *pData;
@@ -1121,6 +1145,7 @@ unsigned int *get_debug_register(void)
 
 	return (unsigned int *) ptr;
 }
+#endif
 
 int isdir(const char *path)
 {
@@ -1159,6 +1184,7 @@ int isdir(const char *path)
 
 void enable_kprintf(int enable)
 {
+#ifndef __PSP2__
 	unsigned int *pData;
 
 	pData = get_debug_register();
@@ -1170,4 +1196,5 @@ void enable_kprintf(int enable)
 	{
 		*pData &= ~DEBUG_REG_KPRINTF_ENABLE;
 	}
+#endif
 }

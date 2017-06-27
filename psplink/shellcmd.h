@@ -71,6 +71,11 @@ struct sh_command
 #endif
 
 /* Define all the shell commands so it can be shared between psplink and pcterm */
+#ifdef __PSP2__
+#define SHELL_COMMANDS \
+	SHELL_CMD("ls",  "dir", ls_cmd,    0, "List the files in a directory", "", "[path1..pathN]") \
+	SHELL_CMD(NULL, NULL, NULL, 0, NULL, NULL, NULL)
+#else
 #define SHELL_COMMANDS \
 	SHELL_CAT("thread", "Commands to manipulate threads") \
 	SHELL_CMD("thlist", "tl", thlist_cmd, 0, "List the threads in the system.", \
@@ -284,5 +289,5 @@ struct sh_command
 			"If a category is specified print all commands underneath. If a command is specified " \
 			"prints specific help.", "[category|command]") \
 	SHELL_CMD(NULL, NULL, NULL, 0, NULL, NULL, NULL)
-
+#endif //__PSP2__
 #endif

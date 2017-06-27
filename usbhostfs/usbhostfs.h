@@ -357,6 +357,8 @@ struct BulkCommand
 
 #ifdef DEBUG
 #ifdef __PSP2__
+int usbStart(const char *bootpath);
+int usbStop();
 #ifdef __KERNEL__
 #include <psp2kern/kernel/sysmem.h>
 #define DEBUG_PRINTF ksceDebugPrintf
