@@ -3088,7 +3088,11 @@ void *async_thread(void *arg)
 							if(g_hDev)
 							{
 								cmd->channel = LE32(i);
+#ifdef __PSP2__
+								euid_usb_bulk_write(g_hDev, 0x4, buf, readbytes+sizeof(struct AsyncCommand), 10000);
+#else
 								euid_usb_bulk_write(g_hDev, 0x3, buf, readbytes+sizeof(struct AsyncCommand), 10000);
+#endif
 							}
 						}
 						else

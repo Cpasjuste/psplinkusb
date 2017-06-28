@@ -320,6 +320,7 @@ void initialise(SceSize args, void *argp)
 
 	struct ConfigContext ctx;
 	const char *init_dir = "host0:/";
+
 #ifndef __PSP2__
 	int (*g_sceUmdActivate)(int, const char *);
 #endif
@@ -333,6 +334,7 @@ void initialise(SceSize args, void *argp)
 #endif
 	g_context.thevent = -1;
 	DEBUG_PRINTF("parse_sceargs\n");
+
 	parse_sceargs(args, argp, &argc, argv);
 
 	if(argc > 0)
@@ -429,17 +431,22 @@ void initialise(SceSize args, void *argp)
 /* Simple thread */
 int main_thread(SceSize args, void *argp)
 {
+    DEBUG_PRINTF("main_thread: initialise\n");
 	initialise(args, argp);
+    DEBUG_PRINTF("main_thread: initialise\n");
 
 	shellParseThread(0, NULL);
 #ifdef __PSP2__
+    /*
     while (1)
     {
         sceKernelDelayThreadCB(0xFFFFFFFF);
     }
+    */
 #else
 	sceKernelSleepThread();
 #endif
+
 	return 0;
 }
 
@@ -452,16 +459,20 @@ int module_start(SceSize args, void *argp)
 
 	/* Create a high priority thread */
 #ifdef __PSP2__
-    thid = sceKernelCreateThread("Psp2Link", main_thread, 64, 32*1024, 0, NULL);
+    DEBUG_PRINTF("sceKernelCreateThread\n");
+    thid = sceKernelCreateThread("Psp2Link", main_thread, 64, 64*1024, 0, NULL);
 #else
 	thid = sceKernelCreateThread("PspLink", main_thread, 8, 64*1024, 0, NULL);
 #endif
 	if(thid >= 0)
 	{
+        DEBUG_PRINTF("sceKernelStartThread\n");
 		sceKernelStartThread(thid, args, argp);
 	}
-
-    DEBUG_PRINTF("sceKernelStartThread: 0x%08X\n", thid);
+    else
+    {
+        DEBUG_PRINTF("sceKernelStartThread: 0x%08X\n", thid);
+    }
 
 	return 0;
 }

@@ -26,15 +26,15 @@ link_directories(
         ${CMAKE_BINARY_DIR}/usbhostfs/usbhostfs.stubs
 )
 
-add_executable(${PROJECT_NAME}
+# user testing
+add_executable(${PROJECT_NAME}-u
         main.c
         shell.c
         usbshell.c
         util.c
         ../psp2/setjmp.S
         )
-
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}-u
         k
         gcc
         SceAppMgr_stub
@@ -43,15 +43,40 @@ target_link_libraries(${PROJECT_NAME}
         SceLibKernel_stub
         SceProcessmgr_stub
         SceKernelThreadMgr_stub
-        #SceLibc_stub
         usbhostfs_stub
         taihen_stub
         )
-
-set_target_properties(${PROJECT_NAME}
+set_target_properties(${PROJECT_NAME}-u
         PROPERTIES LINK_FLAGS "-nostdlib"
         )
+vita_create_self(${PROJECT_NAME}-u.suprx ${PROJECT_NAME}-u
+        CONFIG ${CMAKE_SOURCE_DIR}/psp2/psplink_exports.yml
+        UNSAFE)
 
-vita_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
+
+# kernel testing
+add_executable(${PROJECT_NAME}-k
+        main.c
+        shell.c
+        usbshell.c
+        util.c
+        ../psp2/setjmp.S
+        )
+target_link_libraries(${PROJECT_NAME}-k
+        k
+        gcc
+        SceAppMgr_stub
+        SceSysmem_stub
+        SceIofilemgr_stub
+        SceLibKernel_stub
+        SceProcessmgr_stub
+        SceKernelThreadMgr_stub
+        usbhostfs_stub
+        taihen_stub
+        )
+set_target_properties(${PROJECT_NAME}-k
+        PROPERTIES LINK_FLAGS "-nostdlib"
+        )
+vita_create_self(${PROJECT_NAME}-k.skprx ${PROJECT_NAME}-k
         CONFIG ${CMAKE_SOURCE_DIR}/psp2/psplink_exports.yml
         UNSAFE)
